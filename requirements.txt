@@ -6,3 +6,5 @@ pandas
 numpy
 torch
 tqdm
+nltk
+regex
