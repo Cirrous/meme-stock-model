@@ -8,3 +8,6 @@ torch
 tqdm
 nltk
 regex
+contractions
+
+vaderSentiment
