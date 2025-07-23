@@ -10,3 +10,8 @@ nltk
 regex
 contractions
 vaderSentiment
+scikit-learn
+matplotlib
+seaborn
+transformers
+datasets
