@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesla Stock Prediction Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-5 font-sans">
+    <div class="max-w-6xl mx-auto bg-white rounded-lg overflow-hidden">
+        <div class="bg-red-400 text-white text-center p-8 flex items-center justify-center gap-5">
+            <div class="flex items-center gap-5">
+                <img src="/elon_musk.jpg" alt="Elon Musk" class="w-80 h-30 rounded-lg mr-10">
+                <div class="text-left">
+                    <div class="flex items-center gap-5">
+                        <h1 class="text-4xl font-bold mb-2">🚗 Tesla Stock AI Predictor</h1>
+                    </div>
+                    <p class="text-lg">KI-basierte Aktienprognose basierend auf Reddit Sentiment-Analyse</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-8 grid grid-cols-2 gap-8">
+            <div class="bg-green-500 text-white p-6 rounded-lg text-center">
+                <div class="text-2xl font-semibold mb-4">📈 Model Prediction</div>
+                <div class="text-5xl font-bold my-4" id="prediction">Lade...</div>
+                <div class="text-lg" id="confidence-wrapper">Konfidenz: <span id="confidence">--</span></div>
+                <div class="mt-4 text-sm opacity-90">
+                    Erwartete Bewegung für nächste Woche
+                </div>
+            </div>
+
+            <div class="bg-blue-500 text-center text-white p-6 rounded-lg">
+                <div class="text-2xl font-semibold mb-4">💰 Aktueller Kurs</div>
+                <div class="text-4xl font-bold my-2" id="currentPrice">Lade...</div>
+                <div class="text-xl my-1" id="priceChange">--</div>
+                <div class="mt-4 text-sm opacity-90">
+                    Letzter Handelstag: <span id="lastTradingDay">--</span>
+                </div>
+            </div>
+
+            <div class="col-span-2 mt-5">
+                <div class="bg-gray-50 rounded-lg p-6">
+                    <div class="text-2xl font-semibold mb-4">📱 Used Reddit Posts to predict</div>
+
+                    <div class="bg-white mb-4 p-5 rounded border-l-4 border-red-400">
+                        <div class="font-semibold text-gray-800 mb-2">Loading Reddit posts...</div>
+                        <div class="text-gray-600 text-sm mb-2">
+                            📊 -- upvotes
+                        </div>
+                        <p>Please wait while we load the actual Reddit posts used for prediction...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-center text-gray-600 text-sm p-5 border-t border-gray-200">
+            Letzte Aktualisierung: <span id="lastUpdate">Lade...</span>
+        </div>
+    </div>
+
+    <script>
+        // Load real prediction data
+        async function loadPredictionData() {
+            try {
+                const response = await fetch('/data/latest_prediction.json');
+                const data = await response.json();
+                return data;
+            } catch (error) {
+                console.error('Error loading prediction data:', error);
+                return null;
+            }
+        }
+
+        // Update dashboard with real data
+        async function updateDashboard(data) {
+            if (!data) return;
+
+            // Update prediction - now shows only direction (steigt/fällt)
+            document.getElementById('prediction').textContent = data.prediction.direction;
+            document.getElementById('confidence').textContent = data.prediction.confidence;
+
+            // Update prediction card color based on direction
+            const predictionCard = document.querySelector('.bg-green-500, .bg-red-500');
+            if (data.prediction.direction === 'steigt') {
+                predictionCard.className = predictionCard.className.replace('bg-red-500', 'bg-green-500');
+            } else {
+                predictionCard.className = predictionCard.className.replace('bg-green-500', 'bg-red-500');
+            }
+
+            // Update stock info
+            document.getElementById('currentPrice').textContent = `$${data.current_stock.price.toFixed(2)}`;
+            document.getElementById('priceChange').textContent =
+                `${data.current_stock.change >= 0 ? '+' : ''}$${data.current_stock.change.toFixed(2)} (${data.current_stock.change_percent}%)`;
+            document.getElementById('lastTradingDay').textContent = data.current_stock.trading_day;
+
+            // Update Reddit posts
+            const postsContainer = document.querySelector('.bg-gray-50');
+            let postsHTML = '<div class="text-2xl font-semibold mb-4">📱 Used Reddit Posts to predict</div>';
+
+            data.reddit_posts.forEach(post => {
+                postsHTML += `
+                    <div class="bg-white mb-4 p-5 rounded border-l-4 border-red-400">
+                        <div class="font-semibold text-gray-800 mb-2">${post.title}</div>
+                        <div class="text-gray-600 text-sm mb-2">
+                            📊 ${post.score} upvotes
+                        </div>
+                        <p class="text-gray-700">${post.text_preview}</p>
+                    </div>
+                `;
+            });
+
+            postsContainer.innerHTML = postsHTML;
+
+            // Update timestamp - use actual timestamp from prediction data
+            if (data.timestamp) {
+                const timestamp = new Date(data.timestamp);
+                document.getElementById('lastUpdate').textContent =
+                    timestamp.toLocaleDateString('de-DE') + ', ' + timestamp.toLocaleTimeString('de-DE');
+            } else {
+                // Fallback if no timestamp in data
+                document.getElementById('lastUpdate').textContent = 'Keine Daten verfügbar';
+            }
+        }
+
+        // Load initial data on page load
+        document.addEventListener('DOMContentLoaded', async function () {
+            console.log('Tesla Dashboard geladen');
+
+            // Load initial prediction data
+            const data = await loadPredictionData();
+            if (data) {
+                await updateDashboard(data);
+                console.log('Initial data loaded successfully');
+            } else {
+                console.log('Using demo data - run predict_tesla.ipynb to generate real predictions');
+            }
+        });
+    </script>
+</body>
+
+</html>
