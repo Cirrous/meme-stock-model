@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Tesla Stock Prediction Script
-Runs the complete pipeline: Reddit scraping -> Model prediction -> Dashboard update
+Runs the complete pipeline: Reddit scraping (collect_test_data) ->
+Model prediction (predict_tesla) -> Dashboard update
 """
 
 import subprocess
@@ -46,8 +47,29 @@ def run_prediction():
     print(f"Working from: {project_dir}")
     
     try:
-        # Run the prediction notebook
-        print("Running prediction notebook...")
+        # Step 1: Collect test data (Reddit scraping)
+        print("Step 1/2: Collecting Reddit data...")
+        result = subprocess.run([
+            "jupyter", "nbconvert", "--to", "notebook", 
+            "--execute", "collect_test_data.ipynb",
+            "--output", "collect_test_data_executed.ipynb"
+        ], capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            print("✓ Reddit data collection completed successfully!")
+        else:
+            print("✗ Error collecting Reddit data:")
+            print(result.stderr)
+            return False
+            
+        # Clean up temporary file
+        try:
+            os.remove("collect_test_data_executed.ipynb")
+        except:
+            pass
+        
+        # Step 2: Run the prediction notebook
+        print("Step 2/2: Running Tesla stock prediction...")
         result = subprocess.run([
             "jupyter", "nbconvert", "--to", "notebook", 
             "--execute", "predict_tesla.ipynb",
@@ -55,17 +77,17 @@ def run_prediction():
         ], capture_output=True, text=True)
         
         if result.returncode == 0:
-            print("Prediction completed successfully!")
+            print("✓ Tesla prediction completed successfully!")
             print("Results saved to data/latest_prediction.json")
             print("Dashboard updated - refresh your browser!")
             
             # Check if prediction file exists
             if os.path.exists("data/latest_prediction.json"):
-                print("Prediction file created successfully")
+                print("✓ Prediction file created successfully")
             else:
-                print("Warning: Prediction file not found")
+                print("⚠ Warning: Prediction file not found")
         else:
-            print("Error running prediction:")
+            print("✗ Error running prediction:")
             print(result.stderr)
             return False
             
@@ -77,13 +99,10 @@ def run_prediction():
             pass
             
     except FileNotFoundError:
-            print("Error running prediction:")
-            print(result.stderr)
-            return False
-            
-    except FileNotFoundError:
         print("Jupyter not found. Install with: pip install jupyter")
-        print("Alternative: Run the cells in predict_tesla.ipynb manually")
+        print("Alternative: Run the cells manually in:")
+        print("  1. collect_test_data.ipynb")
+        print("  2. predict_tesla.ipynb")
         return False
         
     except Exception as e:
